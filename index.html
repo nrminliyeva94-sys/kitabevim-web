@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KitabEvim</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <!--Xarici CSS-->
+  <link rel="stylesheet" href="external.css">
+  
+</head>
+<body>
+
+  <!-- ── NAVİQASİYA ── -->
+  <nav>
+    <div class="logo">
+      <span class="logo-hərf">K</span>
+      <span class="logo-ad">KitabEvim</span>
+    </div>
+
+    <ul>
+      <li><a href="#">Ana Səhifə</a></li>
+      <li><a href="#">Kitablar</a></li>
+      <li><a href="#">Haqqımızda</a></li>
+    </ul>
+
+    <!-- Giriş sonrası görunür -->
+    <div class="nav-səbət" id="navSəbət" onclick="sebətiAç()">
+      <span class="səbət-say" id="səbətSay">0</span>
+      🛍 Səbət
+    </div>
+  </nav>
+
+  <!-- ── HERO ── -->
+  <section class="hero">
+    <div class="etiket">📚 Yeni Kitablar Gəldi</div>
+    <h1>Hər Kitabda<br><em>Yeni Bir Dünya</em></h1>
+    <p>Ən yaxşı kitabları əlçatan qiymətlərlə tapın</p>
+    <div class="stat-sira">
+      <div class="stat"><strong>500+</strong><span>Kitab</span></div>
+      <div class="stat"><strong>12K+</strong><span>Oxucu</span></div>
+      <div class="stat"><strong>4.9★</strong><span>Reytinq</span></div>
+    </div>
+  </section>
+
+  <!-- ── GİRİŞ FORMU ── -->
+  <div class="giris-bolme" id="girisBolme">
+    <div class="giris-kart">
+
+      <div class="giris-ust">
+        <div class="giris-ikona" id="girisİkona">🔐</div>
+        <h2 id="formaBasliq">Daxil Ol</h2>
+        <p class="alt-metn">Kitab dünyasına qoşul</p>
+      </div>
+
+      <div class="form-qrup">
+        <label>İstifadəçi adı</label>
+        <div class="input-sarici">
+          <span class="input-ikon">👤</span>
+          <input type="text" id="inpAd" name="username" placeholder="İstifadəçi adınızı yazın">
+        </div>
+      </div>
+
+      <!-- Yalnız qeydiyyatda görünür -->
+      <div class="form-qrup" id="ePoçtQrupu" style="display:none">
+        <label>E-poçt</label>
+        <div class="input-sarici">
+          <span class="input-ikon">✉</span>
+          <input type="email" id="inpEmail" name="email" placeholder="email@example.com">
+        </div>
+      </div>
+
+      <div class="form-qrup">
+        <label>Şifrə</label>
+        <div class="input-sarici">
+          <span class="input-ikon">🔒</span>
+          <input type="password" id="inpSifre" name="password" placeholder="Şifrənizi yazın">
+        </div>
+      </div>
+
+      <button class="btn-əsas" id="authBtn" onclick="authEt()">Daxil Ol</button>
+      <div class="mesaj" id="mesaj"></div>
+
+      <div class="kecid" id="kecidLink">
+        Hesabınız yoxdur? <span onclick="formaKecid()">Qeydiyyat</span>
+      </div>
+
+      <div class="demo">Demo: <strong>admin</strong> / <strong>1234</strong></div>
+    </div>
+  </div>
+
+  <!-- ── KİTABLAR BÖLMƏSİ (giriş sonrası) ── -->
+  <div class="kitablar-bolme" id="kitablarBolme" style="display:none">
+
+    <div class="bolme-bas">
+      <h2>Populyar Kitablar</h2>
+      <p>Bu həftənin ən çox oxunan kitabları</p>
+    </div>
+
+    <!-- Axtarış qutusu -->
+    <div class="axtar-qutu">
+      <span class="axtar-ikon">🔍</span>
+      <input type="text" id="axtar" placeholder="Kitab axtar..." oninput="axtar()">
+    </div>
+
+    <!-- Janr filtrləri -->
+    <div class="filtr-panel" id="filtrPanel"></div>
+
+    <!-- Kitab kartları buraya əlavə olunur -->
+    <div class="kitablar-grid" id="kitablarGrid"></div>
+  </div>
+
+  <!-- ── SƏBƏT PANEL ── -->
+  <div class="overlay" id="overlay" onclick="sebətiQapat()"></div>
+
+  <div class="sebət-panel" id="sebətPanel">
+    <div class="sebət-bas">
+      <h3>Mənim Səbətim</h3>
+      <button class="bağla-btn" onclick="sebətiQapat()">✕</button>
+    </div>
+    <div class="sebət-items" id="sebətItems"></div>
+    <div class="sebət-alt" id="sebətAlt" style="display:none">
+      <div class="sebət-cem">
+        <span>Cəmi:</span>
+        <strong id="sebətCəm">0.00 ₼</strong>
+      </div>
+      <button class="sifariş-btn" onclick="sifariş()">Sifariş ver →</button>
+    </div>
+  </div>
+
+  <!-- ── BİLDİRİŞ ── -->
+  <div class="bildiriş" id="bildiriş">
+    <span class="bildiriş-yoxla">✓</span>
+    <span id="bildirişMetn">Əlavə edildi!</span>
+  </div>
+
+
+  <script>
+
+    /* ── VERİLƏNLƏR BAZASI ── */
+    const db = {
+      istifadeciler: [
+        { ad: "admin", sifre: "1234" },
+        { ad: "elcin", sifre: "abcd" }
+      ],
+      kitablar: [
+        { id:1, ad:"Dədə Qorqud",   muellif:"Xalq Eposu",            qiymet:8.50,  reng:"linear-gradient(135deg,#8B4513,#D2691E)", herf:"D", janr:"Klassik" },
+        { id:2, ad:"Ali və Nino",   muellif:"Kurban Said",           qiymet:12.00, reng:"linear-gradient(135deg,#6B3A2A,#C46A3A)", herf:"A", janr:"Roman" },
+        { id:3, ad:"Ölülər",        muellif:"C. Məmmədquluzadə",     qiymet:9.00,  reng:"linear-gradient(135deg,#3B5A7A,#6A9EC4)", herf:"Ö", janr:"Klassik" },
+        { id:4, ad:"Harry Potter",  muellif:"J.K. Rowling",          qiymet:15.00, reng:"linear-gradient(135deg,#4A3060,#8A60B0)", herf:"H", janr:"Fantastika" },
+        { id:5, ad:"1984",          muellif:"George Orwell",         qiymet:10.50, reng:"linear-gradient(135deg,#2A4A3A,#4A8A6A)", herf:"1", janr:"Dystopiya" },
+        { id:6, ad:"Kiçik Şahzadə",muellif:"A. de Saint-Exupéry",  qiymet:7.00,  reng:"linear-gradient(135deg,#7A5A1A,#C4A84A)", herf:"K", janr:"Klassik" },
+        { id:7, ad:"Cinayət",       muellif:"F. Dostoyevski",        qiymet:11.00, reng:"linear-gradient(135deg,#5A2A2A,#A05A5A)", herf:"C", janr:"Roman" },
+        { id:8, ad:"Alxemik",       muellif:"Paulo Coelho",          qiymet:9.50,  reng:"linear-gradient(135deg,#5A4A1A,#B09040)", herf:"A", janr:"Fəlsəfi" }
+      ]
+    };
+
+    /* ── VƏZİYYƏT DEĞİŞƏNLƏRİ ── */
+    let girisRejim = true;   // true = giriş, false = qeydiyyat
+    let sebət = [];          // Səbətdəki kitablar: [{kitab, say}]
+    let aktifJanr = "Hamısı"; // Aktiv filtr
+
+    /* ── FORMAda Giriş/Qeydiyyat keçidi ── */
+    function formaKecid() {
+      girisRejim = !girisRejim;
+
+      document.getElementById("formaBasliq").textContent = girisRejim ? "Daxil Ol" : "Qeydiyyat";
+      document.getElementById("authBtn").textContent     = girisRejim ? "Daxil Ol" : "Qeydiyyatdan keç";
+      document.getElementById("girisİkona").textContent  = girisRejim ? "🔐" : "📝";
+      document.getElementById("ePoçtQrupu").style.display = girisRejim ? "none" : "block";
+      document.getElementById("kecidLink").innerHTML     = girisRejim
+        ? 'Hesabınız yoxdur? <span onclick="formaKecid()">Qeydiyyat</span>'
+        : 'Artıq hesabınız var? <span onclick="formaKecid()">Daxil ol</span>';
+      document.getElementById("mesaj").textContent = "";
+    }
+
+    /* ── GİRİŞ / QEYDİYYAT ── */
+    let aktifIstifadeci = "";
+    function authEt() {
+        const ad = document.getElementById("inpAd").value.trim();
+        const sifre = document.getElementById("inpSifre").value.trim();
+        const email = document.getElementById("inpEmail").value.trim();
+
+        if (!ad || !sifre) { mesajGöstər("Bütün sahələri doldurun!", "xeta"); return; }
+
+        // hara POST edəcəyimizi seçirik
+        const endpoint = girisRejim ? '/login' : '/register';
+
+        fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: ad, password: sifre })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                if (girisRejim) {
+                    mesajGöstər("Uğurla daxil oldunuz! ✓", "ugur");
+                    setTimeout(kitablarYuklə, 900); // kitabları yükləmədən əvvəl qısa bir mesaj göstər
+                    aktifIstifadeci = ad; // Aktif istifadəçini saxla
+                } else {
+                    mesajGöstər("Qeydiyyat uğurlu! Giriş edin.", "ugur");
+                    setTimeout(formaKecid, 1500);
+                }
+            } else {
+                mesajGöstər(data.message || "Xəta baş verdi!", "xeta");
+            }
+        })
+        .catch(err => mesajGöstər("Serverlə əlaqə yoxdur!", "xeta"));
+    }
+    /* ── MESAJ GÖSTƏRİCİSİ ── */
+    function mesajGöstər(metn, tip) {
+      const el = document.getElementById("mesaj");
+      el.textContent = metn;
+      el.className   = "mesaj " + tip;
+    }
+
+    /* ── KİTABLARI YUKLE ── */
+    function kitablarYuklə() {
+      document.getElementById("girisBolme").style.display     = "none";
+      document.getElementById("navSəbət").style.display       = "flex";
+      document.getElementById("kitablarBolme").style.display  = "block";
+
+      // Janr filtrlərini yarat
+      const janrlar = ["Hamısı", ...new Set(db.kitablar.map(k => k.janr))];
+      const fp = document.getElementById("filtrPanel");
+      fp.innerHTML = janrlar.map(j =>
+        `<button class="filtr-btn ${j === aktifJanr ? 'aktiv' : ''}" onclick="filtrle('${j}')">${j}</button>`
+      ).join("");
+
+      kartlarCiz(db.kitablar);
+    }
+
+    /* ── KART ÇİZ ── */
+    function kartlarCiz(kitablar) {
+      const grid = document.getElementById("kitablarGrid");
+      grid.innerHTML = kitablar.length === 0
+        ? `<p style="grid-column:1/-1;text-align:center;color:var(--solgun);padding:40px">Heç bir kitab tapılmadı.</p>`
+        : kitablar.map((k, i) => `
+          <div class="kitab-kart" style="animation-delay:${i*0.08}s">
+            <div class="kitab-uzluk" style="background:${k.reng}">
+              <span class="kitab-herf">${k.herf}</span>
+            </div>
+            <div class="kitab-info">
+              <h3>${k.ad}</h3>
+              <p class="muellif">${k.muellif}</p>
+              <div class="kitab-alt">
+                <span class="qiymet">${k.qiymet.toFixed(2)} ₼</span>
+                <button class="btn-sebət" onclick="sebeteElave(${k.id})">+ Səbət</button>
+              </div>
+            </div>
+          </div>`).join("");
+    }
+
+    /* ── AXTARIŞ ── */
+    function axtar() {
+      const q = document.getElementById("axtar").value.toLowerCase();
+      const filtrlenmis = db.kitablar.filter(k =>
+        (aktifJanr === "Hamısı" || k.janr === aktifJanr) &&
+        (k.ad.toLowerCase().includes(q) || k.muellif.toLowerCase().includes(q))
+      );
+      kartlarCiz(filtrlenmis);
+    }
+
+    /* ── JANR FİLTRİ ── */
+    function filtrle(janr) {
+      aktifJanr = janr;
+      document.querySelectorAll(".filtr-btn").forEach(b => {
+        b.classList.toggle("aktiv", b.textContent === janr);
+      });
+      axtar(); // Mövcud axtarışı da nəzərə alır
+    }
+
+    /* ── SƏBƏTƏ ƏLAVƏ ── */
+    function sebeteElave(id) {
+      const kitab = db.kitablar.find(k => k.id === id);
+      const item  = sebət.find(s => s.kitab.id === id);
+
+      if (item) {
+        item.say++;
+      } else {
+        sebət.push({ kitab, say: 1 });
+      }
+
+      sayGuncelle();
+      bildirişGöstər(`"${kitab.ad}" səbətə əlavə edildi!`);
+    }
+
+    /* ── SƏBƏTDƏN SİL ── */
+    function sebetdenSil(id) {
+      sebət = sebət.filter(s => s.kitab.id !== id);
+      sayGuncelle();
+      sebətPanelCiz();
+    }
+
+    /* ── SAYI GUNCELLE (navbardakı rəqəm) ── */
+    function sayGuncelle() {
+      const cem = sebət.reduce((s, i) => s + i.say, 0);
+      document.getElementById("səbətSay").textContent = cem;
+    }
+
+    /* ── SƏBƏT PANELİ AÇ ── */
+    function sebətiAç() {
+      sebətPanelCiz();
+      document.getElementById("sebətPanel").classList.add("actiq");
+      document.getElementById("overlay").classList.add("aktiv");
+    }
+
+    /* ── SƏBƏT PANELİ QAPAT ── */
+    function sebətiQapat() {
+      document.getElementById("sebətPanel").classList.remove("actiq");
+      document.getElementById("overlay").classList.remove("aktiv");
+    }
+
+    /* ── SƏBƏT PANELİNİ ÇİZ ── */
+    function sebətPanelCiz() {
+      const container = document.getElementById("sebətItems");
+      const alt       = document.getElementById("sebətAlt");
+
+      if (sebət.length === 0) {
+        container.innerHTML = `
+          <div class="boş-sebət">
+            <div>📚</div>
+            <p>Səbətiniz boşdur</p>
+          </div>`;
+        alt.style.display = "none";
+        return;
+      }
+
+      container.innerHTML = sebət.map(s => `
+        <div class="sebət-item">
+          <div class="item-rəng" style="background:${s.kitab.reng}">${s.kitab.herf}</div>
+          <div style="flex:1">
+            <div class="item-ad">${s.kitab.ad} ${s.say > 1 ? `×${s.say}` : ""}</div>
+            <div class="item-qiymet">${(s.kitab.qiymet * s.say).toFixed(2)} ₼</div>
+          </div>
+          <button class="item-sil" onclick="sebetdenSil(${s.kitab.id})">✕</button>
+        </div>`).join("");
+
+      // Cəmi hesabla
+      const cem = sebət.reduce((s, i) => s + i.kitab.qiymet * i.say, 0);
+      document.getElementById("sebətCəm").textContent = cem.toFixed(2) + " ₼";
+      alt.style.display = "block";
+    }
+
+    /* ── SİFARİŞ ── */
+    function sifariş() {
+      if (sebət.length === 0) return;
+
+      const cəmQiymət = sebət.reduce((s, i) => s + i.kitab.qiymet * i.say, 0);
+
+      const sifarisMelumati = {
+          username: aktifIstifadeci || "Qonaq",
+          items: sebət.map(s => ({ ad: s.kitab.ad, say: s.say, qiymet: s.kitab.qiymet })),
+          total: cəmQiymət
+      };
+
+      fetch('/place-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(sifarisMelumati)
+      })
+      .then(res => res.json())
+      .then(data => {
+          if (data.success) {
+              sebət = [];
+              sayGuncelle();
+              sebətiQapat();
+              bildirişGöstər("Sifarişiniz bazaya yazıldı! ✓");
+          } else {
+              bildirişGöstər("Sifariş zamanı xəta baş verdi.");
+          }
+      })
+      .catch(err => console.error("Sifariş xətası:", err));
+    }
+
+    /* ── BİLDİRİŞ GÖSTƏRİCİSİ ── */
+    function bildirişGöstər(metn) {
+      const el = document.getElementById("bildiriş");
+      document.getElementById("bildirişMetn").textContent = metn;
+      el.classList.add("goster");
+      setTimeout(() => el.classList.remove("goster"), 2600);
+    }
+
+    /* Enter ilə giriş ── */
+    document.addEventListener("keydown", e => { if (e.key === "Enter") authEt(); });
+
+  </script>
+</body>
+</html>
