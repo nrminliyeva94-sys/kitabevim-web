@@ -11,9 +11,28 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
-pool.query('SELECT 1')
-    .then(() => console.log("PostgreSQL bazasına qoşuldu."))
-    .catch(err => console.error("Bazaya qoşulma xətası:", err.message));
+async function initDb() {
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS users (
+            id SERIAL PRIMARY KEY,
+            username VARCHAR(100) UNIQUE NOT NULL,
+            email VARCHAR(255) UNIQUE NOT NULL,
+            password TEXT NOT NULL
+        )
+    `);
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS orders (
+            id SERIAL PRIMARY KEY,
+            username VARCHAR(100) NOT NULL,
+            items TEXT NOT NULL,
+            total_price NUMERIC(10,2) NOT NULL,
+            created_at TIMESTAMP DEFAULT NOW()
+        )
+    `);
+    console.log("PostgreSQL bazasına qoşuldu, cədvəllər hazırdır.");
+}
+
+initDb().catch(err => console.error("Baza xətası:", err.message));
 
 // Giriş
 app.post('/login', async (req, res) => {
