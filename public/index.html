@@ -85,7 +85,7 @@
         Hesabınız yoxdur? <span onclick="formaKecid()">Qeydiyyat</span>
       </div>
 
-      <div class="demo">Demo: <strong>admin</strong> / <strong>1234</strong></div>
+  
     </div>
   </div>
 
@@ -139,10 +139,7 @@
 
     /* ── VERİLƏNLƏR BAZASI ── */
     const db = {
-      istifadeciler: [
-        { ad: "admin", sifre: "1234" },
-        { ad: "elcin", sifre: "abcd" }
-      ],
+     
       kitablar: [
         { id:1, ad:"Dədə Qorqud",   muellif:"Xalq Eposu",            qiymet:8.50,  reng:"linear-gradient(135deg,#8B4513,#D2691E)", herf:"D", janr:"Klassik" },
         { id:2, ad:"Ali və Nino",   muellif:"Kurban Said",           qiymet:12.00, reng:"linear-gradient(135deg,#6B3A2A,#C46A3A)", herf:"A", janr:"Roman" },
@@ -181,7 +178,7 @@
         const sifre = document.getElementById("inpSifre").value.trim();
         const email = document.getElementById("inpEmail").value.trim();
 
-        if (!ad || !sifre) { mesajGöstər("Bütün sahələri doldurun!", "xeta"); return; }
+         if (!ad || !sifre || (!girisRejim && !email)) { mesajGöstər("Bütün sahələri doldurun!", "xeta"); return; }
 
         // hara POST edəcəyimizi seçirik
         const endpoint = girisRejim ? '/login' : '/register';
@@ -189,7 +186,7 @@
         fetch(endpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: ad, password: sifre })
+              body: JSON.stringify({ username: ad, email: email, password: sifre })
         })
         .then(res => res.json())
         .then(data => {

@@ -1,80 +1,76 @@
+require('dotenv').config();
 const express = require('express');
-const sqlite3 = require('sqlite3').verbose();
-const bodyParser = require('body-parser');
-
+const { Pool } = require('pg');
+const bcrypt = require('bcryptjs');
+const path = require('path');
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 
-app.use(bodyParser.json());
-app.use(express.static(__dirname));
+app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
 
-// Verilənlər bazası bağlantısı
-const db = new sqlite3.Database('database.db', (err) => {
-    if (err) {
-        console.error("Bazaya qoşulma xətası:", err.message);
-    } else {
-        console.log("SQLite bazasına qoşuldu.");
-        
-        // Bütün cədvəl yaratma əməliyyatlarını serialize blokuna alırıq
-        db.serialize(() => {
-            // 1. İstifadəçilər cədvəli
-            db.run(`CREATE TABLE IF NOT EXISTS users (
-                id INTEGER PRIMARY KEY AUTOINCREMENT, 
-                username TEXT UNIQUE, 
-                password TEXT
-            )`, (err) => {
-                if (err) console.error("Users cədvəli yaradılanda xəta:", err.message);
-            });
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
-            // 2. Sifarişlər cədvəli
-            db.run(`CREATE TABLE IF NOT EXISTS orders (
-                id INTEGER PRIMARY KEY AUTOINCREMENT, 
-                username TEXT, 
-                items TEXT, 
-                total_price REAL, 
-                date DATETIME DEFAULT CURRENT_TIMESTAMP
-            )`, (err) => {
-                if (err) console.error("Orders cədvəli yaradılanda xəta:", err.message);
-            });
+pool.query('SELECT 1')
+    .then(() => console.log("PostgreSQL bazasına qoşuldu."))
+    .catch(err => console.error("Bazaya qoşulma xətası:", err.message));
 
-            // 3. Test üçün admin əlavə edirik (yalnız yoxdursa)
-            db.run(`INSERT OR IGNORE INTO users (username, password) VALUES ('admin', '1234')`);
-        });
-    }
-});
-
-// Giriş marşrutu
-app.post('/login', (req, res) => {
-    const { username, password } = req.body;
-    db.get("SELECT * FROM users WHERE username = ? AND password = ?", [username, password], (err, row) => {
-        if (err) {
-            return res.status(500).json({ success: false, message: "Server xətası" });
+// Giriş
+app.post('/login', async (req, res) => {
+    try {
+        const { username, password } = req.body;
+        if (!username || !password) {
+            return res.status(400).json({ success: false, message: "Bütün sahələri doldurun!" });
         }
-        if (row) {
-            res.json({ success: true, username: row.username });
+        const result = await pool.query("SELECT * FROM users WHERE username = $1", [username]);
+        const user = result.rows[0];
+        const duzgun = user && await bcrypt.compare(password, user.password);
+        if (duzgun) {
+            res.json({ success: true, username: user.username });
         } else {
             res.status(401).json({ success: false, message: "İstifadəçi adı və ya şifrə səhvdir!" });
         }
-    });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: "Server xətası" });
+    }
 });
 
-// Sifariş marşrutu
-app.post('/place-order', (req, res) => {
-    const { username, items, total } = req.body;
-    const sql = `INSERT INTO orders (username, items, total_price) VALUES (?, ?, ?)`;
-    db.run(sql, [username, JSON.stringify(items), total], function(err) {
-        if (err) return res.status(500).json({ success: false });
+// Qeydiyyat
+app.post('/register', async (req, res) => {
+    try {
+        const { username, email, password } = req.body;
+        if (!username || !email || !password) {
+            return res.status(400).json({ success: false, message: "Bütün sahələri doldurun!" });
+        }
+        const hash = await bcrypt.hash(password, 10);
+        await pool.query(
+            "INSERT INTO users (username, email, password) VALUES ($1, $2, $3)",
+            [username, email, hash]
+        );
         res.json({ success: true });
-    });
+    } catch (err) {
+        if (err.code === '23505') {
+            return res.status(400).json({ success: false, message: "Bu istifadəçi adı və ya e-poçt artıq var" });
+        }
+        console.error(err);
+        res.status(500).json({ success: false, message: "Server xətası" });
+    }
 });
 
-// Qeydiyyat marşrutu
-app.post('/register', (req, res) => {
-    const { username, password } = req.body;
-    db.run("INSERT INTO users (username, password) VALUES (?, ?)", [username, password], function(err) {
-        if (err) return res.status(400).json({ success: false, message: "Bu istifadəçi artıq var" });
+// Sifariş
+app.post('/place-order', async (req, res) => {
+    try {
+        const { username, items, total } = req.body;
+        await pool.query(
+            "INSERT INTO orders (username, items, total_price) VALUES ($1, $2, $3)",
+            [username, JSON.stringify(items), total]
+        );
         res.json({ success: true });
-    });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false });
+    }
 });
 
 app.listen(port, () => {
